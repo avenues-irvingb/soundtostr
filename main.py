@@ -23,8 +23,16 @@ ascii = [
     (120, 'x'), (121, 'y'), (122, 'z'), (123, '{'), (124, '|'), (125, '}'), (126, '~'), (127, '\x7F')
 ]
 
+baselinesSet = False
+bottomVol = 0
+topVol = 0
+
 def getVolume():
-    return int(hummingbird.get_sensor(SensorType.SOUND, ThreePort.ONE))
+    if baselinesSet != True:
+        return int(hummingbird.get_sensor(SensorType.SOUND, ThreePort.ONE))
+    else:
+        return bottomVol + hummingbird.get_sensor(SensorType.SOUND, ThreePort.ONE) * (topVol - bottomVol) / 100
+
 while True:
     lowestVol = getVolume()
     highestVol = getVolume()
@@ -42,34 +50,46 @@ while True:
 
     if (highestVol - lowestVol) > 5:
         basic.show_string("vol unstable")
+
     elif input.button_is_pressed(Button.A):
         basic.show_icon(IconNames.YES)
         basic.pause(1000)
         basic.show_string("Ready...")
 
-        if getVolume() > 40 and getVolume() < 60:
-            basic.show_icon(IconNames.YES)
-            basic.pause(500)
+        while True:
+            if getVolume() > 40 and getVolume() < 60:
+                basic.show_icon(IconNames.YES)
+                basic.pause(500)
+                bottomVol = getVolume()
+                basic.pause(500)
+                topVol = getVolume()
 
-            while True:
-                if getVolume() < 30:
-                    currentStr += "0"
-                    basic.show_string("0")
-                elif getVolume() > 70:
-                    currentStr += "1"
-                    basic.show_string("1")
-                elif getVolume() > 50 and getVolume() < 70:
-                    translatedWords.append(currentStr)
-                    currentStr = ""
-                    basic.show_string("-")
+                if (topVol - bottomVol) < 80:
+                    basic.show_string("Noise too high")
                 else:
-                    translatedWords.append(currentStr)
-                    basic.show_icon(IconNames.YES)
-                    basic.pause(1800)
-                    break
-                basic.pause(200)
-            for j in translatedWords:
-                completedStr += str(ascii[int(j[:8], 2)])
+                    baselinesSet = True
+
+                    while True:
+                        if getVolume() < 30:
+                            currentStr += "0"
+                            basic.show_string("0")
+                        elif getVolume() > 70:
+                            currentStr += "1"
+                            basic.show_string("1")
+                        elif getVolume() > 50 and getVolume() < 70:
+                            translatedWords.append(currentStr)
+                            currentStr = ""
+                            basic.show_string("-")
+                        elif getVolume() < 50 and getVolume() > 30:
+                            translatedWords.append(currentStr)
+                            basic.show_icon(IconNames.YES)
+                            basic.pause(1800)
+                            break
+                        basic.pause(200)
+                    
+                    for j in translatedWords:
+                        completedStr += str(ascii[int(j[:8], 2)])
+                    
 
             
 
